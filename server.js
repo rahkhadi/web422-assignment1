@@ -3,6 +3,8 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const CompaniesDB = require("./modules/companiesDB.js");
+// Create an instance of the companiesDB module
+const db = new CompaniesDB();
 
 dotenv.config();
 const app = express();
@@ -12,19 +14,9 @@ const HTTP_PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Create an instance of the companiesDB module
-const db = new CompaniesDB();
 
-// Initialize the MongoDB connection
-db.initialize(process.env.MONGODB_CONN_STRING)
-  .then(() => {
-    app.listen(HTTP_PORT, () => {
-      console.log(`Server is running on port ${HTTP_PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error(`Error initializing MongoDB: ${err}`);
-  });
+
+
 
 // Define API routes
 app.get("/", (req, res) => {
@@ -91,3 +83,15 @@ app.delete("/api/company/:id", async (req, res) => {
     res.status(500).json({ error: "Unable to delete company" });
   }
 });
+
+
+// Initialize the MongoDB connection
+db.initialize(process.env.MONGODB_CONN_STRING)
+  .then(() => {
+    app.listen(HTTP_PORT, () => {
+      console.log(`Server is running on port ${HTTP_PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error(`Error initializing MongoDB: ${err}`);
+  });
