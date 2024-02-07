@@ -20,33 +20,52 @@ let companyObjectToTableRowTemplate = company => {
 };
 
 function loadCompanyData(name = null) {
-    let url = name ? `/api/companies?page=${page}&perPage=${perPage}&name=${name}` 
-                   : `/api/companies?page=${page}&perPage=${perPage}`;
+    const div = document.getElementsByClassName("pagination");
+    let url = name ? `/api/companies?page=${page}&perPage=${perPage}&name=${name}` : `/api/companies?page=${page}&perPage=${perPage}`;
 
     fetch(url)
-    .then(response => response.json())
-    .then(companies => {
-        const tableBody = document.querySelector('#companyTable tbody');
-        tableBody.innerHTML = companies.map(company => companyObjectToTableRowTemplate(company)).join('');
+        .then(res => res.json())
+        .then(data => {    
+            let companyRows = data.map(company => companyObjectToTableRowTemplate(company)).join('');
+            document.querySelector('#companyTable tbody').innerHTML = companyRows;
+            document.querySelector('#current-page').textContent = page;
 
-        document.querySelector('#current-page').innerText = page;
+            document.querySelectorAll('#companyTable tbody tr').forEach(row => {
+                row.addEventListener("click", e => {
+                    let clickedId = row.getAttribute("data-id");
 
-        document.querySelectorAll('#companyTable tbody tr').forEach(row => {
-            row.addEventListener('click', () => {
-                const clickedId = row.getAttribute('data-id');
-                fetch(`/api/company/${clickedId}`)
-                .then(response => response.json())
-                .then(data => {
-                    const modalBody = document.querySelector('#detailsModal .modal-body');
-                    modalBody.innerHTML = generateCompanyDetailsHTML(data);
-                    new bootstrap.Modal(document.getElementById('detailsModal')).show();
-                })
-                .catch(error => console.error('Error fetching company details:', error));
+                    fetch(`/api/company/${clickedId}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            let singleCompanyInfo = `
+                                <strong>Category:</strong> ${data.category_code || ''}<br /><br />
+                                <strong>Description:</strong> ${data.description || ''}<br /><br />
+                                <strong>Overview:</strong> ${data.overview || ''}<br /><br />
+                                <strong>Tag List:</strong> ${data.tag_list || ''}<br />
+                                <strong>Founded:</strong> ${data.founded_year ? `${data.founded_month || ''}/${data.founded_day || ''}/${data.founded_year}` : ''}<br /><br />
+                                <strong>CEOs:</strong> ${data.relationships.filter(relationed => relationed.title.includes("CEO")).map(relationed => `${relationed.person.first_name} ${relationed.person.last_name} (${relationed.title})`).join(', ') || 'No persons listed. Information needed!'}<br /><br />
+                                <strong>Products:</strong> ${data.products.map(product => product.name).join(', ') || 'This company has made no products.'}<br /><br />
+                                <strong>Number of Employees:</strong> ${data.number_of_employees || ''}<br /><br />
+                                <strong>Website:</strong> ${data.homepage_url || ''}<br /><br />
+                            `;
+
+                            document.querySelector("#detailsModal .modal-body").innerHTML = singleCompanyInfo;
+
+                            let modal = new bootstrap.Modal(document.getElementById("detailsModal"), {
+                                backdrop: "static",
+                                keyboard: false
+                            });
+
+                            modal.show();
+                        });
+                });
             });
+        })
+        .catch(error => {
+            console.error('Error loading company data:', error);
         });
-    })
-    .catch(error => console.error('Error loading company data:', error));
 }
+
 
 document.addEventListener('DOMContentLoaded', function () {
     
