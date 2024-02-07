@@ -5,100 +5,119 @@
 *  (including web sites) or distributed to other students.
 * 
 *  Name: Rahimullah Khadim Hussain Student ID: 119515229 Date: 2024/01/24
-*  Cyclic Link: https://fluffy-crow-pajamas.cyclic.app
+*  Cyclic Link: https://tame-cyan-pelican-tie.cyclic.app
 *
 ********************************************************************************/ 
-
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const dotenv = require("dotenv");
-const CompaniesDB = require("./modules/companiesDB.js");
-// Create an instance of the companiesDB module
+// Setup
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv').config();
+const path = require('path');
+const bodyParser = require('body-parser');
+const CompaniesDB = require('./modules/companiesDB.js')
 const db = new CompaniesDB();
-
-dotenv.config();
 const app = express();
-const HTTP_PORT = process.env.PORT || 3000;
+const HTTP_PORT = process.env.PORT || 8080;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/js', express.static(__dirname + '/js'));
+app.use('/css', express.static(__dirname + '/css'));
+var corsMiddleware = function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000/', 'http://127.0.0.1:5500/'); //replace localhost with actual host
+    res.header('Access-Control-Allow-Methods', 'OPTIONS, GET, PUT, PATCH, POST, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, Authorization');
 
-// Define API routes
-app.get("/", (req, res) => {
-  res.json({ message: "API Listening" });
+    next();
+}
+
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
+app.use(bodyParser.json())
+app.use(corsMiddleware);
+
+
+
+// Deliver a json message
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, "/index.html"))
 });
 
-app.post("/api/companies", async (req, res) => {
-  try {
-    const newCompany = await db.addNewCompany(req.body);
-    res.status(201).json(newCompany);
-  } catch (err) {
-    res.status(500).json({ error: "Unable to add a new company" });
-  }
-});
-
-app.get("/api/companies", async (req, res) => {
-  const { page, perPage, name } = req.query;
-  try {
-    const companies = await db.getAllCompanies(page, perPage, name);
-    res.json(companies);
-  } catch (err) {
-    res.status(500).json({ error: "Unable to fetch companies" });
-  }
-});
-
-app.get("/api/company/:id", async (req, res) => {
-  const companyId = req.params.id;
-  try {
-    const company = await db.getCompanyById(companyId);
-    if (company) {
-      res.json(company);
-    } else {
-      res.status(404).json({ error: "Company not found" });
-    }
-  } catch (err) {
-    res.status(500).json({ error: "Unable to fetch company" });
-  }
-});
-
-app.put("/api/company/:id", async (req, res) => {
-  const companyId = req.params.id;
-  try {
-    const updatedCompany = await db.updateCompanyById(req.body, companyId);
-    if (updatedCompany.nModified === 1) {
-      res.json(updatedCompany);
-    } else {
-      res.status(404).json({ error: "Company not found" });
-    }
-  } catch (err) {
-    res.status(500).json({ error: "Unable to update company" });
-  }
-});
-
-app.delete("/api/company/:id", async (req, res) => {
-  const companyId = req.params.id;
-  try {
-    const result = await db.deleteCompanyById(companyId);
-    if (result.deletedCount === 1) {
-      res.status(204).send();
-    } else {
-      res.status(404).json({ error: "Company not found" });
-    }
-  } catch (err) {
-    res.status(500).json({ error: "Unable to delete company" });
-  }
-});
-
-
-// Initialize the MongoDB connection
-db.initialize(process.env.MONGODB_CONN_STRING)
-  .then(() => {
-    app.listen(HTTP_PORT, () => {
-      console.log(`Server is running on port ${HTTP_PORT}`);
+// C - Add new company
+app.post('/api/companies', (req, res) => {
+    db.addNewCompany(req.body)
+      .then((data) => {
+          res.json(data);
+          res.status(201).end()
+      })
+      .catch(function (err) {
+        res.status(500).json({ "message":"Server internal error: " + err})
+      })
     });
-  })
-  .catch((err) => {
-    console.error(`Error initializing MongoDB: ${err}`);
-  });
+
+// R - Get All companies
+app.get('/api/companies', (req, res) => {
+    let page = req.query["page"];
+    let perPage = req.query["perPage"];
+    let name = req.query["name"];
+    db.getAllCompanies(page, perPage, name)
+      .then((data) => {
+        res.json(data);
+        res.status(200).end()
+      })
+      .catch(function (err) {
+        res.status(500).json({ "message":"Server internal error: " + err})
+      })
+    });
+
+// R - Get one company
+app.get('/api/company/:id', (req, res) => {
+    db.getCompanyById(req.params.id)
+      .then((data) => {
+        res.json(data);
+        res.status(200).end()
+      })
+      .catch(function (err) {
+        res.status(500).json({ "message":"Server internal error: " + err})
+      })
+    });
+
+// U - Edit existing company
+app.put('/api/company/:id', (req, res) => {
+    db.updateCompanyById(req.body, req.params.id)
+      .then((data) => {
+        res.json(data);
+        res.status(201).end()
+      })
+      .catch(function (err) {
+        res.status(500).json({ "message":"Server internal error: " + err})
+      })
+    });
+
+// D - Delete user
+app.delete('/api/company/:id', async (req, res) => {
+    try {
+        await db.deleteCompanyById(req.params.id);
+        res.status(204).end()
+    }
+    catch (e) {
+        res.status(500).json({ "message":"Server internal error: " + e})
+    }
+    });
+
+// Resource not found (this shouldn't really be possible)
+app.use((req, res) => {
+  res.status(404).send('Resource not found');
+});
+
+db.initialize(process.env.MONGODB_CONN_STRING)
+    .then(() => {
+        app.listen(HTTP_PORT, ()=>{
+            console.log(`server listening on: ${HTTP_PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.log(err);
+    });
