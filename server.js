@@ -1,14 +1,3 @@
-/*********************************************************************************
-*  WEB422 – Assignment 1
-*  I declare that this assignment is my own work in accordance with Seneca  Academic Policy.  
-*  No part of this assignment has been copied manually or electronically from any other source
-*  (including web sites) or distributed to other students.
-* 
-*  Name: Rahimullah Khadim Hussain Student ID: 119515229 Date: 2024/01/24
-*  Cyclic Link: https://tame-cyan-pelican-tie.cyclic.app
-*
-********************************************************************************/ 
-// Setup
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv').config();
